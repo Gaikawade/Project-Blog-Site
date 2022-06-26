@@ -5,9 +5,14 @@ const blogController = require("../models/blogModel");
 const validator = require("validator");
 
 const createBlog = async function(req, res){
+<<<<<<< HEAD
     try{
         const details = req.body;
         let {title, body, authorId, category} = details;
+=======
+     try{
+        const details = req.body
+>>>>>>> 00df008ce5cfec32ef9bd2bb8db9da58515c8f19
 
         if(!title) return res.status(400).send({status: false, msg: "Title of the blog is required"});
         if(!validator.isLength(title, {min: 5, max: 30})){return res.status(400).send({status: false, msg: 'The length of the title should contain minium 5 and maximum 30 charactors!'})};
@@ -26,10 +31,17 @@ const createBlog = async function(req, res){
 
         const data = await blogController.create(details)
         res.status(200).send({status: true, data: data})
+<<<<<<< HEAD
     }
     catch(err){
         res.status(500).send({status: false, msg: err.message});
     }
+=======
+     }
+     catch(err){
+         res.status(500).send({status: false, msg: err.message});
+     }
+>>>>>>> 00df008ce5cfec32ef9bd2bb8db9da58515c8f19
 }
 
 const getBlog = async function(req, res){
