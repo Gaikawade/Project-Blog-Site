@@ -3,7 +3,9 @@ const jwt = require("jsonwebtoken");
 let authentication = async function(req, res, next){
     try{
         let token = req.headers[`x-api-key`]
-        if(!token) return res.status(400).send({status: false, msg:"Token must be present in Headers"});
+        if(!token) return res.status(400).send({status: false, msg: "Token must be present in Headers"});
+        let decodedToken = jwt.verify(token, "project-blog");
+        if(!decodedToken) return  res.status(400).send({ status: false, msg: "Please enter a valid Token"});
         next();
     }
     catch(err){
