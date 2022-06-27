@@ -59,9 +59,9 @@ const updateBlog = async function(req, res){
         const blogId = req.params.blogId
         const details = req.body
         const validId = await blogModel.findById(blogId)
-        if (!validId){
-            return res.status(400).send({status:false, msg:"Blog Id is invalid"});
-        }
+        if (!validId) return res.status(400).send({status:false, msg:"Blog Id is invalid"});
+
+        if(validId.isDeleted == true) return res.status(404).send({status: false, msg: "The blog is already deleted"});
        
         const updatedDetails = await blogModel.findOneAndUpdate(
             {_id : blogId},
@@ -125,7 +125,6 @@ const deleteBlogByQuery = async function(req, res){
             {new: true}
         );
         if (deleteByQuery) res.status(200).send({ status: true, msg : "Your blogs have been deleted", data: deleteByQuery });
-        else res.status(400).send({status: true, msg: "Your blog is already deleted"});
 
     }catch(err){
         res.status(500).send({status: false, msg: err.message})
