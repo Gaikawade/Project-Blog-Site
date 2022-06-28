@@ -58,18 +58,24 @@ const updateBlog = async function(req, res){
     try{
         const blogId = req.params.blogId
         const details = req.body
+        const authorFromToken = req.authorId
+        if(!authorFromToken) return res.status(400).send({status: false, message: "It is not a valid token"})
         const validId = await blogModel.findById(blogId)
         if (!validId) return res.status(400).send({status:false, msg:"Blog Id is invalid"});
+
+        if(validId.authorId.toString() !== authorFromToken){
+            return res.status(400).send({status: false, message:"Your are not authorised"})
+        }
 
         if(validId.isDeleted == true) return res.status(404).send({status: false, msg: "The blog is already deleted"});
        
         const updatedDetails = await blogModel.findOneAndUpdate(
             {_id : blogId},
-            {title : details.title, body : details.body, tags : details.tags,
-            subcategory : details.subcategory, isPublished : true, publishedAt : new Date()},
+            {$push: {tags : details.tags, subcategory : details.subcategory},
+            $set: {title : details.title, body : details.body, isPublished : true, publishedAt : new Date()}},
             {new : true, upsert : true}
         );
-        res.status(201).send({status:true, data:updatedDetails})
+        res.status(200).send({status:true, message: "Your blog is updated", data:updatedDetails})
     }
     catch(err) {
         console.log(err)
@@ -80,9 +86,16 @@ const updateBlog = async function(req, res){
 const deleteBlogById = async function(req, res){
     try{
         const blogId = req.params.blogId;
+        const authorFromToken = req.authorId
+        if(!authorFromToken) return res.status(400).send({status: false, message: "It is not a valid token"})
         if(!blogId) return res.status(404).send({status: false, msg: "BlogId is invalid"});
 
-        const check = await blogModel.findById({_id: blogId});
+        const check = await blogModel.findById({_id: blogId}); 
+
+        if(check.authorId.toString() !== authorFromToken){
+            return res.status(400).send({status: false, message:"Your are not authorised"})
+        }
+
         if(check.isDeleted == true) return res.status(404).send({status: false, msg: "The blog is already deleted"});
 
         const deleteDetails = await blogModel.findOneAndUpdate(
@@ -98,34 +111,17 @@ const deleteBlogById = async function(req, res){
 
 const deleteBlogByQuery = async function(req, res){
     try{
-        const data = req.query;
-        const { authorId, category, subcategory, tags } = data
-        
-        if (category) {
-            let verifyCategory = await blogModel.findOne({ category: category })
-            if (!verifyCategory) return res.status(400).send({ status: false, msg: 'No blogs in this category exist' });
-        }
-
-        if (tags) {
-            let verifytags = await blogModel.findOne({ tags: tags })
-            if (!verifytags) return res.status(400).send({ status: false, msg: 'no blog with this tags exist' });
-        }
-
-        if (subcategory) {
-            let verifysubcategory = await blogModel.findOne({ subcategory: subcategory })
-            if (!verifysubcategory) return res.status(400).send({ status: false, msg: 'no blog with this subcategory exist'});
-        }
-
-        let findBlog = await blogModel.find({$and :[data, {isdeleted : false}, {authorId : authorId} ]});
-        if(!findBlog) return res.status(400).send({status :false, msg : "no blogs are present with this query"});
-
+        let data = req.query;
+        let authorFromToken = req.authorId
+        let valid = await authorModel.findById(authorFromToken)
+        if (valid._id.toString() !== authorFromToken) return res.status(401).send({ status: false, message: "Unauthorized access ! user doesn't match" })
         const deleteByQuery = await blogModel.updateMany(
-            data,
-            {isDeleted: true, deletedAt: new Date()},
-            {new: true}
-        );
-        if (deleteByQuery) res.status(200).send({ status: true, msg : "Your blogs have been deleted", data: deleteByQuery });
-
+            {$and: [data, { authorId: valid, isDeleted: false }] },
+            {$set: { isDeleted: true, DeletedAt: new Date() } },
+            {new: true }
+        )
+        if (deleteByQuery.modifiedCount == 0) return res.status(400).send({ status: false, msg: "The Blog is already Deleted" })
+        res.status(200).send({ status: true, msg: deleteByQuery })
     }catch(err){
         res.status(500).send({status: false, msg: err.message})
     }
