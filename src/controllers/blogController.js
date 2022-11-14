@@ -64,7 +64,7 @@ const updateBlog = async function(req, res){
         if (!validId) return res.status(400).send({status:false, msg:"Blog Id is invalid"});
 
         if(validId.authorId.toString() !== authorFromToken){
-            return res.status(400).send({status: false, message:"Your are not authorised"})
+            return res.status(401).send({status: false, message:"Your are not authorised"})
         }
 
         if(validId.isDeleted == true) return res.status(404).send({status: false, msg: "The blog is already deleted"});
@@ -75,7 +75,7 @@ const updateBlog = async function(req, res){
             $set: {title : details.title, body : details.body, isPublished : true, publishedAt : new Date()}},
             {new : true, upsert : true}
         );
-        res.status(200).send({status:true, message: "Your blog is updated", data:updatedDetails})
+        res.status(201).send({status:true, message: "Your blog is updated", data:updatedDetails})
     }
     catch(err) {
         console.log(err)
@@ -93,19 +93,19 @@ const deleteBlogById = async function(req, res){
         const check = await blogModel.findById({_id: blogId}); 
 
         if(check.authorId.toString() !== authorFromToken){
-            return res.status(400).send({status: false, message:"Your are not authorised"})
+            return res.status(401).send({status: false, message:"Your are not authorised"})
         }
 
-        if(check.isDeleted == true) return res.status(404).send({status: false, msg: "The blog is already deleted"});
+        if(check.isDeleted == true) return res.status(400).send({status: false, msg: "The blog is already deleted"});
 
         const deleteDetails = await blogModel.findOneAndUpdate(
             {_id: blogId },
             {isDeleted: true, deletedAt: new Date()},
             {new: true}
         );
-        res.status(200).send({status: true, data: deleteDetails});
+        res.status(201).send({status: true, data: deleteDetails});
     }catch(err){
-        res.status(404).send({msg: err.message});
+        res.status(500).send({msg: err.message});
     }
 }
 
@@ -123,7 +123,7 @@ const deleteBlogByQuery = async function(req, res){
             {new: true }
         )
         if (deleteByQuery.modifiedCount == 0) return res.status(400).send({ status: false, msg: "The Blog is already Deleted" })
-        res.status(200).send({ status: true, msg: deleteByQuery })
+        res.status(201).send({ status: true, msg: deleteByQuery })
     }catch(err){
         res.status(500).send({status: false, msg: err.message})
     }

@@ -26,7 +26,7 @@ const createAuthor = async function(req, res){
     if(!validateEmail) return res.status(400).send({status: false, msg: "Invalid Email ID, Please check"});
   
     const data = await authorModel.create(details)
-    res.status(201).send({status: true, data: data});    
+    res.status(201).send({status: true, data: data});
   }
   catch(err){
     res.status(500).send({status: false, error: err.message});
