@@ -1,3 +1,4 @@
+const { sendError } = require("../middleware/error");
 const authorModel = require("../models/authorModel");
 
 const createAuthor = async function (req, res) {
@@ -6,38 +7,38 @@ const createAuthor = async function (req, res) {
     const letters = /^[A-Za-z]+$/;
 
     if (!details.fname)
-        return res.status(400).send({ status: false, msg: "First name is required" });
+        return sendError(res, 'First name is required')
     if (!details.fname.match(letters)) {
-        return res.status(400).send({status: false, msg: "First name should contain only alphabets"});
+        return sendError(res, "First name should contain only alphabets");
     }
 
     if (!details.lname)
-        return res.status(400).send({ status: false, msg: "Last name is required" });
+        return sendError(res, "Last name is required" );
     if (!details.lname.match(letters)) {
-        return res.status(400).send({status: false, msg: "Last name should contain only alphabets",});
+        return sendError(res, "Last name should contain only alphabets");
     }
 
     if (!details.title)
-        return res.status(400).send({ status: false, msg: "Title is required" });
+        return sendError(res, "Title is required" );
 
     let word = ["Mr", "Mrs", "Miss"];
     if (!word.includes(details.title)) {
-        return res.status(400).send({ status: false, msg: "Title can accept only Mr/Mrs/Miss!" });
+        return sendError(res, "Title can accept only Mr/Mrs/Miss!" );
     }
 
     if (!details.email)
-        return res.status(400).send({ status: false, msg: "Email is required" });
+        return sendError(res, "Email is required" );
 
     const validateEmail = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(details.email);
     if (!validateEmail)
-        return res.status(400).send({ status: false, msg: "Invalid Email ID, Please check" });
+        return sendError(res, "Invalid Email ID, Please check" );
 
     let isUnique = await authorModel.findOne({ email: details.email });
     if (isUnique) 
-      return res.status(400).send({ status: false, msg: "Enter a unique email id!" });
+      return sendError(res, "Enter a unique email id!" );
 
     if (!details.password)
-        return res.status(400).send({ status: false, msg: "Password is required" });
+        return sendError(res, "Password is required" );
 
     const data = await authorModel.create(details);
     res.status(201).send({ status: true, data: data });

@@ -3,36 +3,37 @@ const authorModel = require("../models/authorModel");
 const authorController = require("../models/authorModel");
 const blogController = require("../models/blogModel");
 const validator = require("validator");
+const { sendError } = require("../middleware/error");
 
 const createBlog = async function (req, res) {
     const details = req.body;
     let { title, body, authorId, category } = details;
 
     if (!title)
-        return res.status(400).send({ status: false, msg: "Title of the blog is required" });
+        return sendError(res, "Title of the blog is required" );
     if (!validator.isLength(title, { min: 5, max: 30 })) {
-        return res.status(400).send({status: false, msg: "The length of the title should contain minium 5 and maximum 30 charactors!"});
+        return sendError(res, "The length of the title should contain minium 5 and maximum 30 charactors!");
     }
 
     if (!body)
-        return res.status(400).send({ status: false, msg: "Body of the blog is required" });
+        return sendError(res, "Body of the blog is required" );
     if (!validator.isLength(body, { min: 10 })) {
-        return res.status(400).send({status: false, msg: "The length of body should have atleast 10 letters."});
+        return sendError(res, "The length of body should have atleast 10 letters.");
     }
 
     if (!authorId)
-        return res.status(400).send({ status: false, msg: "Author_Id of the blog is required" });
+        return sendError(res, "Author_Id of the blog is required" );
     let authorDetails = await authorModel.findOne({ _id: authorId });
     if (!authorDetails) {
-        res.status(400).send({status: false,msg: "The Author with the given author id doesn't exist" });
+        return sendError(res, "The Author with the given author id doesn't exist", 404);
     }
 
     if (!category)
-        return res.status(400).send({ status: false, msg: "Category of the blog is required" });
+        return sendError(res, "Category of the blog is required" );
 
     const validate = await authorController.findById(details.authorId);
     if (!validate)
-        return res.status(400).send({ status: false, msg: "You have entered a invalid Author_Id"});
+        return sendError(res, "You have entered a invalid Author_Id");
 
     const data = await blogController.create(details);
     res.status(201).send({ status: true, data: data });
@@ -48,12 +49,12 @@ const getBlog = async function (req, res) {
     if (q.authorId) {
         const validate = await authorController.findById(q.authorId);
         if (!validate)
-            return res.status(404).send({ status: false, msg: "AuthorId is not valid" });
+            return sendError(res, "AuthorId not Found", 404 );
     }
 
     const data = await blogModel.find(filter);
     if (data.length == 0)
-        return res.status(404).send({ status: false, msg: "No blog is found" });
+        return sendError(res, "No blog is found", 404 );
 
     res.status(200).send({ status: true, data: data });
 };
@@ -63,17 +64,17 @@ const updateBlog = async function (req, res) {
     const details = req.body;
     const authorFromToken = req.authorId;
     if (!authorFromToken)
-        return res.status(400).send({ status: false, message: "It is not a valid token" });
+        return sendError(res, "It is not a valid token" );
     const validId = await blogModel.findById(blogId);
     if (!validId)
-        return res.status(400).send({ status: false, msg: "Blog Id is invalid" });
+        return sendError(res, "Blog Id is invalid", 404 );
 
     if (validId.authorId.toString() !== authorFromToken) {
-        return res.status(401).send({ status: false, message: "Your are not authorised" });
+        return sendError(res, "Your are not authorised" );
     }
 
     if (validId.isDeleted == true)
-        return res.status(404).send({ status: false, msg: "The blog is already deleted" });
+        return sendError(res, "No blog found", 404 );
 
     const updatedDetails = await blogModel.findOneAndUpdate(
         { _id: blogId },
@@ -99,18 +100,18 @@ const deleteBlogById = async function (req, res) {
     const blogId = req.params.blogId;
     const authorFromToken = req.authorId;
     if (!authorFromToken)
-        return res.status(400).send({ status: false, message: "It is not a valid token" });
+        return sendError(res, "It is not a valid token" );
     if (!blogId)
-        return res.status(404).send({ status: false, msg: "BlogId is invalid" });
+        return sendError(res, "BlogId not found", 404 );
 
     const check = await blogModel.findById({ _id: blogId });
 
     if (check.authorId.toString() !== authorFromToken) {
-        return res.status(401).send({ status: false, message: "Your are not authorised" });
+        return sendError(res, "Your are not authorised" );
     }
 
     if (check.isDeleted == true)
-        return res.status(400).send({ status: false, msg: "The blog is already deleted" });
+        return sendError(res, "Blog not found", 404 );
 
     const deleteDetails = await blogModel.findOneAndUpdate(
         { _id: blogId },
@@ -124,11 +125,11 @@ const deleteBlogByQuery = async function (req, res) {
     let data = req.query;
     let authorFromToken = req.authorId;
     if (!authorFromToken)
-        return res.status(400).send({ status: false, message: "It is not a valid token" });
+        return sendError(res, "It is not a valid token" );
 
     let valid = await authorModel.findById(authorFromToken);
     if (valid._id.toString() !== authorFromToken)
-        return res.status(401).send({status: false, message: "Unauthorized access ! user doesn't match"});
+        return sendError(res, "Unauthorized access! user doesn't match");
 
     const deleteByQuery = await blogModel.updateMany(
         { $and: [data, { authorId: valid._id, isDeleted: false }] },
@@ -136,7 +137,7 @@ const deleteBlogByQuery = async function (req, res) {
         { new: true }
     );
     if (deleteByQuery.modifiedCount == 0)
-        return res.status(400).send({ status: false, msg: "The Blog is already Deleted" });
+        return sendError(res, "Blog not found", 404);
         
     res.status(201).send({ status: true, msg: deleteByQuery });
 };
