@@ -6,9 +6,11 @@ const logInUser = async function (req, res) {
     let userName = req.body.email;
     let password = req.body.password;
 
-    if (!userName) return sendError(res, "user Name is required");
-    if (!password) return sendError(res, "password is required");
-    
+    if (!userName || !userName.trim())
+        return sendError(res, "user Name is required");
+    if (!password || !password.trim())
+        return sendError(res, "password is required");
+
     const check = await authorModel.findOne({
         email: userName,
         password: password,
