@@ -25,7 +25,7 @@ const createBlog = async function(req, res){
         if(!validate) return res.status(400).send({status: false, msg: "You have entered a invalid Author_Id"});
 
         const data = await blogController.create(details)
-        res.status(200).send({status: true, data: data})
+        res.status(201).send({status: true, data: data})
     }
     catch(err){
         res.status(500).send({status: false, msg: err.message});
@@ -48,7 +48,7 @@ const getBlog = async function(req, res){
         const data = await blogModel.find(filter);
         if(data.length == 0) return res.status(404).send({status:false, msg: "No blog is found"});
 
-        res.status(201).send({status: true, data: data})
+        res.status(200).send({status: true, data: data})
     }catch(err){
         res.status(500).send({status: false, msg: err.message});
     }
@@ -113,6 +113,8 @@ const deleteBlogByQuery = async function(req, res){
     try{
         let data = req.query;
         let authorFromToken = req.authorId
+        if(!authorFromToken) return res.status(400).send({status: false, message: "It is not a valid token"})
+
         let valid = await authorModel.findById(authorFromToken)
         if (valid._id.toString() !== authorFromToken) return res.status(401).send({ status: false, message: "Unauthorized access ! user doesn't match" })
         const deleteByQuery = await blogModel.updateMany(
